@@ -1,4 +1,371 @@
-<script type="module">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wedding Registration Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #6e8477;    /* Elegant Sage Green */
+            --accent-color: #c5a880;     /* Soft Champagne Gold */
+            --text-color: #2c3531;       /* Deep Charcoal */
+            --bg-color: #f4f6f5;         /* Crisp, clean ivory tinted white */
+            --card-bg: #ffffff;
+            --success-color: #4a5d4e;    /* Deep Forest Sage */
+            --danger-color: #b86b6b;     /* Muted Rose/Crimson */
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(rgba(110, 132, 119, 0.03) 1px, transparent 0);
+            background-size: 24px 24px;
+            color: var(--text-color);
+            margin: 0;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+            text-align: center;
+            box-sizing: border-box;
+            border: 1px solid rgba(110, 132, 119, 0.1);
+        }
+
+        h1 {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 38px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--success-color);
+            margin: 0 0 8px 0;
+        }
+
+        .subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-style: italic;
+            color: #7a827e;
+            margin-bottom: 35px;
+            letter-spacing: 0.5px;
+        }
+
+        /* Dashboard Tabs Layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 35px;
+        }
+
+        .stat-card {
+            background: #fafbfc;
+            padding: 18px;
+            border-radius: 12px;
+            border: 1px solid #eef1f0;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            user-select: none;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-color);
+        }
+
+        .stat-card.active-filter {
+            background: #ffffff;
+            border: 1.5px solid var(--primary-color);
+            box-shadow: 0 4px 15px rgba(110, 132, 119, 0.08);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 400;
+            font-family: 'Cormorant Garamond', serif;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: #7a827e;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 6px;
+        }
+
+        /* Search Input */
+        .search-box {
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 16px 24px;
+            font-size: 15px;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--text-color);
+            background-color: #fafbfc;
+            border: 1px solid #e1e5e3;
+            border-radius: 40px;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(110, 132, 119, 0.08);
+        }
+
+        .current-filter-indicator {
+            text-align: left;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-left: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: none;
+        }
+
+        /* Guest Card Components */
+        .results-container {
+            text-align: left;
+        }
+
+        .guest-card {
+            background: #ffffff;
+            border-left: 4px solid #e1e5e3;
+            padding: 22px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.015);
+            border-top: 1px solid rgba(0,0,0,0.01);
+            border-right: 1px solid rgba(0,0,0,0.01);
+            border-bottom: 1px solid rgba(0,0,0,0.01);
+            animation: slideUp 0.4s ease forwards;
+        }
+
+        .guest-card.checked-in {
+            border-left-color: var(--success-color);
+            background: #fcfdfe;
+        }
+
+        .guest-card.partial-checkin {
+            border-left-color: var(--accent-color);
+            background: #fffdfa;
+        }
+
+        .guest-details {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-grow: 1;
+            padding-right: 15px;
+        }
+
+        .guest-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .guest-name {
+            font-weight: 500;
+            font-size: 17px;
+            color: #1e2421;
+            letter-spacing: -0.3px;
+        }
+
+        .pax-badge {
+            background: #f0f3f1;
+            color: var(--primary-color);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .seating-remarks {
+            font-size: 13px;
+            color: #616b66;
+            background: #f7f9f8;
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-top: 2px;
+            display: inline-block;
+            line-height: 1.5;
+            border: 1px dashed rgba(110, 132, 119, 0.15);
+        }
+
+        .status-badge {
+            font-size: 11px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .status-badge.belum {
+            background: #fcf1f1;
+            color: var(--danger-color);
+        }
+
+        .status-badge.partial {
+            background: #fff5e6;
+            color: #d9822b;
+        }
+
+        .status-badge.hadir {
+            background: #edf3ee;
+            color: var(--success-color);
+        }
+
+        /* Action Buttons and Counters */
+        .action-area {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+            min-width: 160px;
+        }
+
+        .btn-checkin {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 500;
+            font-size: 12px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            width: 100%;
+            box-shadow: 0 2px 6px rgba(110, 132, 119, 0.15);
+        }
+
+        .btn-checkin.undo {
+            background-color: #838c87;
+            box-shadow: none;
+        }
+
+        .btn-checkin:hover {
+            opacity: 0.95;
+            transform: translateY(-0.5px);
+        }
+
+        .counter-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #ffffff;
+            border: 1px solid #e1e5e3;
+            border-radius: 30px;
+            padding: 3px;
+            width: 100%;
+            box-sizing: border-box;
+            justify-content: space-between;
+        }
+
+        .btn-counter {
+            background: #f0f3f1;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-color);
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-counter:hover {
+            background: #e1e6e3;
+        }
+
+        .counter-val {
+            font-size: 11px;
+            font-weight: 600;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .no-results {
+            color: #838c87;
+            font-style: italic;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 14px;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Our Wedding Registry</h1>
+        <div class="subtitle">Seating Arrangement & Attendance Tracker</div>
+        
+        <div class="dashboard">
+            <div class="stat-card active-filter" id="tabAll" onclick="setFilter('all')">
+                <div class="stat-number" id="totalPax">0</div>
+                <div class="stat-label">Total Pax</div>
+            </div>
+            <div class="stat-card" id="tabHadir" onclick="setFilter('hadir')">
+                <div class="stat-number" id="totalArrived" style="color: var(--success-color);">0</div>
+                <div class="stat-label">Hadir</div>
+            </div>
+            <div class="stat-card" id="tabBelum" onclick="setFilter('belum')">
+                <div class="stat-number" id="totalAbsent" style="color: var(--danger-color);">0</div>
+                <div class="stat-label">Belum Hadir</div>
+            </div>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search family, room, or group name..." oninput="searchGuest()">
+        </div>
+
+        <div id="filterIndicator" class="current-filter-indicator"></div>
+        <div id="results" class="results-container"></div>
+    </div>
+
+    <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
