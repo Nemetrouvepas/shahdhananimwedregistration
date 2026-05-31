@@ -365,11 +365,30 @@
         <div id="results" class="results-container"></div>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // 2. Paste YOUR exact Firebase Config details here
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const guestRef = ref(db, 'guests/');
+
         let currentFilter = 'all';
 
-        // Exact consolidated group dataset mapped directly from your wedding PDF
-        const guestGroups = [
+        // Your exact initial configuration dataset
+        let guestGroups = [
             { name: "Miza Wawa", totalPax: 10, arrivedPax: 0, remarks: "Meja 9 (10 person)" },
             { name: "Bilik 8", totalPax: 11, arrivedPax: 0, remarks: "Meja 24 (10 person) & Meja 25 (1 person)" },
             { name: "Apak", totalPax: 6, arrivedPax: 0, remarks: "Meja 1 (6 person)" },
@@ -451,18 +470,39 @@
             { name: "Bilik 7", totalPax: 1, arrivedPax: 0, remarks: "Meja 26 (1 person)" }
         ];
 
-        // Unique identifier loops
+        // Mapped unique IDs
         guestGroups.forEach((group, index) => group.id = index);
+
+        // 3. LISTEN FOR LIVE CHANGES FROM FIREBASE
+        onValue(guestRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Merge Firebase values into local state
+                guestGroups.forEach(g => {
+                    if (data[g.id] !== undefined) {
+                        g.arrivedPax = data[g.id].arrivedPax;
+                    }
+                });
+            } else {
+                // If Database is completely fresh/empty, initialize it with your list
+                let initialUpload = {};
+                guestGroups.forEach(g => {
+                    initialUpload[g.id] = { arrivedPax: g.arrivedPax };
+                });
+                set(guestRef, initialUpload);
+            }
+            // Re-render UI upon changes
+            updateDashboardCounters();
+            searchGuest();
+        });
 
         function updateDashboardCounters() {
             let total = 0;
             let arrived = 0;
-            
             guestGroups.forEach(g => {
                 total += g.totalPax;
                 arrived += g.arrivedPax;
             });
-            
             let absent = total - arrived;
 
             document.getElementById('totalPax').innerText = total;
@@ -470,9 +510,9 @@
             document.getElementById('totalAbsent').innerText = absent;
         }
 
-        function setFilter(filterType) {
+        // Functions exposed safely inside modules to handle interactive logic
+        window.setFilter = function(filterType) {
             currentFilter = filterType;
-            
             document.getElementById('tabAll').classList.remove('active-filter');
             document.getElementById('tabHadir').classList.remove('active-filter');
             document.getElementById('tabBelum').classList.remove('active-filter');
@@ -490,36 +530,30 @@
                 indicator.innerText = "Filter: Absent Groups";
                 indicator.style.display = 'block';
             }
-
             searchGuest();
         }
 
-        function checkInEntireGroup(id) {
+        window.checkInEntireGroup = function(id) {
             const group = guestGroups.find(g => g.id === id);
             if (group) {
-                if (group.arrivedPax === group.totalPax) {
-                    group.arrivedPax = 0;
-                } else {
-                    group.arrivedPax = group.totalPax;
-                }
-                updateDashboardCounters();
-                searchGuest();
+                const targetPax = (group.arrivedPax === group.totalPax) ? 0 : group.totalPax;
+                // Sync up to Firebase
+                set(ref(db, `guests/${id}`), { arrivedPax: targetPax });
             }
         }
 
-        function adjustPaxCount(id, change) {
+        window.adjustPaxCount = function(id, change) {
             const group = guestGroups.find(g => g.id === id);
             if (group) {
                 const newCount = group.arrivedPax + change;
                 if (newCount >= 0 && newCount <= group.totalPax) {
-                    group.arrivedPax = newCount;
-                    updateDashboardCounters();
-                    searchGuest();
+                    // Sync up to Firebase
+                    set(ref(db, `guests/${id}`), { arrivedPax: newCount });
                 }
             }
         }
 
-        function searchGuest() {
+        window.searchGuest = function() {
             const query = document.getElementById('searchInput').value.toLowerCase().trim();
             const resultsDiv = document.getElementById('results');
             resultsDiv.innerHTML = '';
@@ -542,7 +576,6 @@
 
             filteredList.forEach(group => {
                 const card = document.createElement('div');
-                
                 let statusClass = 'belum';
                 let statusLabel = 'Belum Hadir';
                 let cardStateClass = '';
@@ -582,12 +615,9 @@
                         </div>
                     </div>
                 `;
-                resultsDiv.innerHTML += card.outerHTML;
+                resultsDiv.appendChild(card);
             });
         }
-
-        updateDashboardCounters();
-        searchGuest();
     </script>
 </body>
 </html>
